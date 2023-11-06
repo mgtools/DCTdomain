@@ -1,2 +1,2 @@
-# domDCT
-protein domain-level embedding via DCT for similarity search
+# DCTdomain
+protein domain-level embedding via DCT for homology detection and similarity search
