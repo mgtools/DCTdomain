@@ -1,0 +1,10 @@
+This benchmark contains 351 pairs of G6PD containing proteins (for a total of 26 proteins) 
+
+Two ways to run the pipelines: 
+
+  bash commands.sh
+
+  or 
+
+  bash commands-steps.sh
+  (to see the indiviudal steps)

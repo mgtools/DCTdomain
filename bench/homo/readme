@@ -1,0 +1,6 @@
+This folder contains files for the homology detection benchmarking 
+
+* Due to the file sizes, the NPY and CE files are not inclucded in this folder
+* The DCT fingerprints are saved to *.npz files 
+* Call the following command to compute the similarity between the given pairs of proteins
+  bash commands.sh
