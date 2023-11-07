@@ -15,6 +15,8 @@ this package contains programs and scripts for the different tasks
 ### see files under test/ for a quick testing
 ### see benchmarks under bench/ folder
 homo -- homology detection benchmarks
+
 domcut -- domain segmentation on FUpred benchmark
+
 G7PD -- pairs of G6PD containing proteins
 
