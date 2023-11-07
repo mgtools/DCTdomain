@@ -2,7 +2,7 @@
 Protein domain-level embedding via DCT for homology detection and similarity search
 
 ## Approach
-![This is an image](https://github.com/mgtools/Domai/blob/main/misc/DCTdomain-diag.png)
+![This is an image](https://github.com/mgtools/DCTdomain/blob/main/misc/DCTdomain-diag.png)
 
 ## Programs/scripts
 this package contains programs and scripts for the different tasks
