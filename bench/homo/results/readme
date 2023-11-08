@@ -1,0 +1,19 @@
+This folder contains the results from using each homology detection tool on the benchmark datasets. We used each tool with the same settings as found in the supplementary methods (Table S3) for https://academic.oup.com/bioinformatics/article/32/17/2636/2450749?login=true.
+
+Tools:
+    - DCTdomain/global with FU predicted domains
+    - DCTdomain/global with RecCut predicted domains
+    - BLAST
+    - CSBlast
+    - FASTA
+    - HHSearch
+    - phmmer
+    - UBLAST
+    - USEARCH
+
+Datasets:
+    - pfam_max50
+    - pfam_nomax50
+    - pfam_localpfam_nomax50
+
+On each dataset, each tool has a csv file with a label for each pair (1 if homolog, 0 if not) and a score. These scores are used to generate the ROC curves seen in the paper. You can replicate these graphs by running AUC.py from the home directory.

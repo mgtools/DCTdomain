@@ -1,7 +1,9 @@
 # DCTdomain
-Protein domain-level embedding via DCT for homology detection and similarity search
+Protein domain-level embedding via ESM-2 and DCT for homology detection and similarity search.
 
 ## Approach
+An overview of the pipeline is visualized in the figure below:
+
 ![This is an image](https://github.com/mgtools/DCTdomain/blob/main/misc/DCTdomain-diag.png)
 
 ## Programs/scripts
@@ -11,12 +13,39 @@ this package contains programs and scripts for the different tasks
 3) generate DCT fingerprints (DCTdomain and DCTglobal) given predicted domains
 4) applications of DCT fingerprints 
 
-## Example usages
-### see files under test/ for a quick testing
-### see benchmarks under bench/ folder
-homo -- homology detection benchmarks
+## Running Pipeline
+This pipeline is implemented in two scripts, a bash script that generates the DCT fingerprints and a python script that calculates the similarity between them. You can run them as shown below:
+
+```
+bash src/fingerprint.sh <.fa file> <.list file> <output1-name>
+python src/dct-sim.py --pair <.pair file> --dct <output1-name>-dct.npz --output <output2-name>
+```
+
+fingerprint.sh takes a fasta file with any number of sequences and file with a list of each sequence you would like a fingerprint for (see files under test/ for examples). This will produce two output files, <output>.dom which contains a list of predicted domains for each protein in the fasta file, and <output>-dct.npz which contains a DCT fingerprint for each predicted domain.
+
+dct-sim.py takes a file with a list of each sequence pair you would like to calculate the distance between and a .npz file containing DCT fingerprints from src/fingerprint.sh (again see files under test/ for examples). This will produce a file with the distances between each pair of sequences.
+
+## Benchmarks
+See benchmarks and corresponding readmes under bench/ folder.
 
 domcut -- domain segmentation on FUpred benchmark
 
 G7PD -- pairs of G6PD containing proteins
 
+homo -- homology detection benchmarks
+
+## Requirements
+To install DCTDomain, clone this repository:
+
+```
+git clone https://github.com/mgtools/DCTdomain
+```
+
+And install the following dependences:
+
+python3
+python packages:
+    -fair-esm
+    -numpy
+    -scipy
+    -torch
