@@ -14,10 +14,13 @@ for b in range(len(benchlist)):  #pylint: disable=consider-using-enumerate
     print(f"\nBench: {bench}")
     rocs = []
     for (ap, ap_show) in zip(approaches, approaches_show):
-        file = f"bench/homo/results/pfam_{bench}/{ap}_results.csv"
+        file = f"./pfam_{bench}/{ap}_results.csv"
         df = pd.read_csv(file)
         df.columns = ['label', 'pred']
         fpr, tpr, thresholds = metrics.roc_curve(df['label'], df['pred'], pos_label=1)
+        print("fpr", fpr)
+        print("tpr", tpr)
+        print("thresholds", thresholds)
         auc = metrics.auc(fpr, tpr)
         print(f"{ap_show} {auc:.3f}")
         rocs.append([ap_show, fpr, tpr, auc])

@@ -16,4 +16,4 @@ Datasets:
     - pfam_nomax50
     - pfam_localpfam_nomax50
 
-On each dataset, each tool has a csv file with a label for each pair (1 if homolog, 0 if not) and a score. These scores are used to generate the ROC curves seen in the paper. You can replicate these graphs by running AUC.py from the home directory.
+On each dataset, each tool has a csv file with a label for each pair (1 if homolog, 0 if not) and a score. These scores are used to generate the ROC curves seen in the paper. You can replicate these graphs by running AUC.py from this directory.

@@ -52,7 +52,7 @@ def main():
     parser.add_argument("--pairfound", help="pairs of proteins with similarity computed", required=False)
     parser.add_argument("--db", help="search query dct against this db", required=False)
     parser.add_argument("--top", help="report at most this many hits for database search", default=5, type=int)
-    parser.add_argument("--threshold", help="similarity threshold for reporting hits for database search", default=0.4, type=float)
+    parser.add_argument("--threshold", help="similarity threshold for reporting hits for database search", default=0.25, type=float)
     args = parser.parse_args()
 
     if args.output:
@@ -65,7 +65,7 @@ def main():
     nowt = time.time()
     print(f"dct loaded for {len(seqid)} sequences, time used: {nowt - start:.1f}s")
 
-    tot = len(seqid)
+    totseq = len(seqid)
     if args.output:
         out.write(f"#prot1 prot2 sim-domain sim-global\n")
     else:
@@ -101,7 +101,7 @@ def main():
     elif args.db: #query against database
         db_dct, db_seqid = load_dct(args.db, asmap=False)
         db_tot = len(db_seqid)
-        for i in range(tot):
+        for i in range(totseq):
             results = []
             for q in range(db_tot):
                 (maxs, s) = domain_sim(dct[i], db_dct[q])
@@ -117,8 +117,8 @@ def main():
                 else:
                     print(tmp)
     else: #all againt all
-        for i in range(tot - 1):
-            for j in range(i + 1, tot):
+        for i in range(totseq - 1):
+            for j in range(i + 1, totseq):
                 (maxs, s) = domain_sim(dct[i], dct[j])
                 #sim = similarity_level(ann, seqid[i], seqid[j])
                 tmp = f"{seqid[i]} {seqid[j]} {maxs:.3f} {s:.3f}"
