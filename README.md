@@ -28,7 +28,7 @@ dct-sim.py takes a file with a list of each sequence pair you would like to calc
 ## Using DCT fingerprints in three different modes
 The script dct-sim.py can be run in three different modes. 
 
-We will sse the examples under test for demonstration purposes.
+We will use the examples under test for demonstration purposes.
 
 cd test
 
@@ -44,6 +44,10 @@ In this example, all proteins with DCT fingerprints in example-dct.npz will be c
 python ../src/dct-sim.py --dct example-dct.npz --db example-dct.npz --output example-all-vs-db-dctsim.txt 
 
 In this example we use the same npz as the query and as the database. All proteins given in --dct will be compared against all proteins given in --db. 
+
+### Results and DCT fingerprint similarty scores
+
+In the main output file, each row shows the similarity between a pair of proteins, with the first two columns showing the IDs of the proteins, followed by two similarty scores of the DCT fingerprints DCTdomain and DCTglobal. The scores range between 0 and 1, with 0 indicating no similarity and 1 hightest similarity. Typically, DCTdomain score of 0.25 or DCTglobal score of 0.20 indicates the two proteins share some similarity. 
 
 ## Benchmarks
 See benchmarks and corresponding readmes under bench/ folder.
