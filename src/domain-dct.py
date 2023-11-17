@@ -86,7 +86,7 @@ def main():
         if aline[0] == '#':
             continue
         subs = aline.strip().split() 
-        if len(subs) == 3:
+        if len(subs) >= 3:
             (seqid, domsize, domstr) = subs[0:3] 
         else:
             seqid, domsize, domstr = subs[0], 1, "" 

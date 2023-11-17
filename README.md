@@ -74,3 +74,11 @@ python packages:
     -torch
     -numpy
     -scipy
+
+## Final words about RecCut:
+
+If it doesn't work properly on your computer, you may consider re-compile it as follows,
+
+cd src/
+
+g++ -o RecCut RecCut.cpp
