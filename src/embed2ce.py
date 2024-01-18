@@ -1,73 +1,97 @@
-import torch
-import esm
-import numpy as np
+"""Writes most confident contacts to file after sequences have been embedded.
+
+Yuzhen Ye, Indiana University, Nov 2023
+"""
+
 import argparse
 import sys
 import os
-#Yuzhen Ye, Indiana University, Nov 2023
-def readfasta(filename):
+from operator import itemgetter
+import numpy as np
+
+def readfasta(filename: str) -> tuple:
+    """Read fasta file and return a list of (seqid, seq) tuples.
+
+    Args:
+        filename (str): path to fasta file
+
+    Returns:
+        list of (seqid, seq) tuples
+    """
+
     seqid, seqseq = [], []
-    inf = open(filename, "r")
+    inf = open(filename, "r", encoding='utf-8')
     for aline in inf:
         if aline[0] == '>':
             seqid.append(aline[1:-1])
             seqseq.append("")
         else:
             seqseq[-1] += aline.strip()
+    inf.close()
     return seqid, seqseq
 
-#write in CE for domain segmentation 
-#the top t * L contact pairs, L is the length (t is the alpha parameter in FUpred paper)
-from operator import itemgetter
-def writece_a(outfile, seqid, seqseq, a, t = 2.6):
-    out_a = open(outfile, "w")
-    a1 = np.array(a) 
+def writece_a(outfile: str, seqid: str, seqseq: str, cta: np.ndarray, t: float):
+    """write in CE for domain segmentation
+    the top t * L contact pairs, L is the length (t is the alpha parameter in FUpred paper)
+
+    Args:
+        outfile (str): path to output file
+        seqid (str): sequence id
+        seqseq (str): sequence
+        cta (np.array): contact map
+        t (float): threshold for contact map (0.5 to 5)
+    """
+
+    # Sort contacts by confidence
     slen = len(seqseq)
-    a2 = a1.reshape(slen, slen)
-    out_a.write(f"INF   protein {slen}\n")
-    out_a.write(f"SEQ   {seqseq}\n")
-    out_a.write(f"SS    {'C' * slen}\n")
+    cta1 = cta.reshape(slen, slen)
     ssep = 5
     data = []
     for i in range(slen - ssep):
         for j in range(i + ssep, slen):
-            data.append([a2[i][j], i, j])
+            data.append([cta1[i][j], i, j])
     ct_sorted = sorted(data, key=itemgetter(0), reverse=True)
 
+    # Get top t * L contacts
     sout = ""
-    #t: 0.5 to 5
     tot = int(t * slen)
     print(f"protein length {slen} contacts considered {tot} confidence {ct_sorted[tot - 1][0]}")
     for s in range(tot):
         i, j = ct_sorted[s][1], ct_sorted[s][2]
         if not sout:
-            sout = f"CON   {i} {j} {a2[i][j]:.6f}"
+            sout = f"CON   {i} {j} {cta1[i][j]:.6f}"
         else:
-            sout += f",{i} {j} {a2[i][j]:.6f}"
-    out_a.write(sout + "\n")
-    out_a.close()
+            sout += f",{i} {j} {cta1[i][j]:.6f}"
 
-#write in CE for domain segmentation (select contacts according to confidence)
-from operator import itemgetter
-def writece_t(outfile, seqid, seqseq, a, t = 0.1):
-    out_a = open(outfile, "w")
-    a1 = np.array(a) 
+    # Write sequence info and top contacts to file
+    with open(outfile, "w", encoding='utf8') as out_f:
+        out_f.write(f"INF   {seqid} {slen}\n")
+        out_f.write(f"SEQ   {seqseq}\n")
+        out_f.write(f"SS    {'C' * slen}\n")
+        out_f.write(sout + "\n")
+
+def writece_t(outfile: str, seqid: str, seqseq: str, cta: np.ndarray, t: float = 0.1):
+    """#write in CE for domain segmentation (select contacts according to confidence)
+    """
+
     slen = len(seqseq)
-    a2 = a1.reshape(slen, slen)
-    out_a.write(f"INF   protein {slen}\n")
-    out_a.write(f"SEQ   {seqseq}\n")
-    out_a.write(f"SS    {'C' * slen}\n")
+    cta1 = cta.reshape(slen, slen)
     ssep = 5
     sout = ""
     for i in range(slen - ssep):
         for j in range(i + ssep, slen):
-            if a2[i][j] >= t:
+            if cta1[i][j] >= t:
                 if not sout:
-                    sout = f"CON   {i} {j} {a2[i][j]:.6f}"
+                    sout = f"CON   {i} {j} {cta1[i][j]:.6f}"
                 else:
-                    sout += f",{i} {j} {a2[i][j]:.6f}"
-    out_a.write(sout + "\n")
-    out_a.close()
+                    sout += f",{i} {j} {cta1[i][j]:.6f}"
+
+    # Write sequence info and top contacts to file
+    with open(outfile, "w", encoding='utf8') as out_f:
+        out_f.write(f"INF   {seqid} {slen}\n")
+        out_f.write(f"SEQ   {seqseq}\n")
+        out_f.write(f"SS    {'C' * slen}\n")
+        out_f.write(sout + "\n")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -79,14 +103,15 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.ce):
-        os.mkdir(args.ce) 
+        os.mkdir(args.ce)
     if not os.path.exists(args.npy):
-        sys.exit(args.npy, " doesn't exist") 
+        sys.exit(args.npy, " doesn't exist")
 
     seqid, seqseq = readfasta(args.input)
-    for idx in range(len(seqid)):
+    for idx in range(len(seqid)):  #pylint: disable=C0200
+
+        # Load corresponding embedding file
         npyfile = args.npy + "/" + seqid[idx] + ".npz"
-        #load data
         if not os.path.exists(npyfile):
             print(f"{npyfile} doesn't exist; please run embedding first")
             continue
@@ -95,6 +120,8 @@ def main():
             print(f"{out_a} exists; skip")
             continue
         data = np.load(npyfile)
+
+        # Get contact map and write most confident contacts to file
         cta = data["ct"]
         out_a = args.ce + "/" + seqid[idx] + ".ce"
         if args.ce_t:
