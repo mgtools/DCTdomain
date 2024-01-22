@@ -30,7 +30,7 @@ def readfasta(filename: str) -> tuple:
     inf.close()
     return seqid, seqseq
 
-def writece_a(outfile: str, seqid: str, seqseq: str, cta: np.ndarray, t: float):
+def writece_a(outfile: str, seqid: str, seqseq: str, cta: np.ndarray, t: float = 2.6):
     """write in CE for domain segmentation
     the top t * L contact pairs, L is the length (t is the alpha parameter in FUpred paper)
 
