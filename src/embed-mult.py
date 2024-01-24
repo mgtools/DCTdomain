@@ -73,8 +73,8 @@ def main():
     parser.add_argument("--gpu", help="using gpu, otherwise using cpu", default=False, required=False)
     parser.add_argument("--batchsize", help="batchsize; default 1", default=1, required=False)
     parser.add_argument("--overwrite", help="redo if npy exists; otherwise skip if exists", type=bool, default=False, required=False)
-    parser.add_argument("--maxlen", help="max length of sequence to embed", type=int, default=800, required=False)
-    parser.add_argument("--maxgpu", help="max length of sequence to embed on GPU", type=int, default=400, required=False)
+    parser.add_argument("--maxlen", help="max length of sequence to embed", type=int, default=1200, required=False)
+    parser.add_argument("--maxgpu", help="max length of sequence to embed on GPU", type=int, default=600, required=False)
     args = parser.parse_args()
 
     if not os.path.exists(args.npy):
@@ -88,6 +88,11 @@ def main():
     model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
     batch_converter = alphabet.get_batch_converter()
     model.eval()  # disables dropout for deterministic results
+
+    # Get filename for .list file
+    listfile = args.input.split('.')[0] + ".list"
+    with open(listfile, "w", encoding='utf8') as listf:
+        listf.write('#protein\n')
 
     fasta = readfasta(args.input, args.batchsize)
     while True:
@@ -119,6 +124,10 @@ def main():
                 print(f"seq {seqid[idx]} too long {len(seqseq[idx])}, moving to CPU")
                 device = 'cpu'
                 model.to(device)
+
+            # Add sequence to list file
+            with open(listfile, "a", encoding='utf8') as listf:
+                listf.write(f"{seqid[idx]}\n")
 
             # Add each sequence to list of sequences to embed
             print(f"seq {seqid[idx]} {len(seqseq[idx])}")
