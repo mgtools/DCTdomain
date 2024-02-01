@@ -13,8 +13,7 @@ import torch
 import esm
 import numpy as np
 
-
-def readfasta(filename: str, batchsize: int):
+def readfasta(filename: str, batchsize: int) -> list:
     """Read fasta file and return a list of (seqid, seq) tuples.
 
     Args:
@@ -38,11 +37,82 @@ def readfasta(filename: str, batchsize: int):
     yield seqid, seqseq
     inf.close()
 
-def combine_contacts(mat1, mat2, inc, times):
+def split_seq(seqseq: str, seqid: str, idx: int, maxlen: int) -> list:
+    """Returns a list of (seqid, subseq) tuples, where subseq is a substring of seqseq[idx] of
+    length maxlen.
+
+    Args:
+        seqseq (str): sequence
+        seqid (str): sequence id
+        idx (int): index of sequence in seqseq
+        maxlen (int): maximum length of subseq
+
+    Returns:
+        list of (seqid, subseq) tuples
+    """
+
+    embed = []
+    for i in range(0, len(seqseq[idx]), maxlen):
+        if i == 0:
+            subseq = seqseq[idx][i:i+maxlen]
+        else:
+            subseq = seqseq[idx][i-200:i+maxlen-200]
+        if len(subseq) > 200:
+            embed.append((seqid[idx], subseq))
+    return embed
+
+def split_emb(embed: list, batch_converter: esm.Alphabet, device: str, model: esm.pretrained):
+    """Returns a dictionary of embeddings and contacts for each subsequence in a list of
+    (seqid, subseq) tuples.
+
+    Args:
+        embed (list): list of (seqid, subseq) tuples
+        batch_converter (esm.Alphabet): ESM alphabet
+        device (str): device to use for embedding
+        model (esm.pretrained): ESM model
+
+    Returns:
+        dict: dictionary where key is type of embedding and value is a list of overlapping
+        embeddings or contacts
+    """
+
+    edata = {'e13': [], 'e25': [], 'ct': []}
+    for emb in embed:
+        _, _, batch_tokens = batch_converter([emb])  # batch_labels, batch_strs
+        batch_tokens = batch_tokens.to(device)
+        with torch.no_grad():
+            results = model(batch_tokens, repr_layers=[13, 25], return_contacts=True)
+        edata['e13'].append(results["representations"][13].cpu().numpy())
+        edata['e25'].append(results["representations"][25].cpu().numpy())
+        edata['ct'].append(results["contacts"].cpu().numpy())
+    return edata
+
+def avg_emb(embeds: list) -> np.ndarray:
+    """Returns a single embedding by averaging and concatenating a list of embeddings.
+
+    Args:
+        embeds (list): list of (seqid, np.ndarray) tuples
+    Returns:
+        numpy array: single 1D embedding
+    """
+
+    full_emb = np.array([])
+    for emb in embeds:
+        emb = emb[0][1:-1]
+        if len(full_emb) == 0:
+            full_emb = emb
+            continue
+        avg = (full_emb[-200:] + emb[:200]) / 2  # avg adjacent positions
+        full_emb[-200:] = avg  # replace last 200 positions of previous emb with avg
+        full_emb = np.concatenate((full_emb, emb[200:]), axis=0)  # concat rest of new emb
+    return full_emb
+
+def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -> np.ndarray:
     """Returns a larger square matrix combining two smaller square matrices.
 
-    mat1 has values starting from the top left corner, mat2 has values starting from the bottom right corner, and the
-    overlapping indices are averaged. The number of overlapping indices is determine by the inc argument.
+    mat1 has values starting from the top left corner, mat2 has values starting from the bottom
+    right corner, and the overlapping indices are averaged. The number of overlapping indices is
+    determine by the inc argument.
 
     Args:
         mat1 (numpy array): Running matrix of contacts (n x n).
@@ -80,6 +150,25 @@ def combine_contacts(mat1, mat2, inc, times):
 
     return zeros1
 
+def avg_ct(contacts: list) -> np.ndarray:
+    """Returns a single contact map by averaging and combining a list of contact maps.
+
+    Args:
+        contacts (list): list of (seqid, np.ndarray) tuples
+
+    Returns:
+        numpy array: single 2D contact map
+    """
+
+    full_contacts = np.array([])
+    for i, cont in enumerate(contacts):
+        cont = cont[0]
+        if len(full_contacts) == 0:  # initialize full array
+            full_contacts = cont
+            continue
+        full_contacts = combine_contacts(full_contacts, cont, inc = 800, times = i)
+    return full_contacts
+
 def embed_batch(model: esm.pretrained, batch_tokens: torch.Tensor, data: list, npyfile: str):
     """Embeds a batch of protein sequences using the given model.
 
@@ -93,20 +182,19 @@ def embed_batch(model: esm.pretrained, batch_tokens: torch.Tensor, data: list, n
     # Extract per-residue representations (on CPU)
     try:
         with torch.no_grad():
-            results = model(batch_tokens, repr_layers=[13, 25, 33], return_contacts=True)
+            results = model(batch_tokens, repr_layers=[13, 25], return_contacts=True)
     except RuntimeError:
         print("RuntimeError occured, try smaller --maxgpu")
         return
-    r33a = results["representations"][33].cpu()
     r13a = results["representations"][13].cpu()
     r25a = results["representations"][25].cpu()
     cta = results["contacts"].cpu()
 
     # Save data into npz file
     np.set_printoptions(threshold=sys.maxsize)
-    for (sid, seq), e13, e25, e33, ct in zip(data, r13a, r25a, r33a, cta):
+    for (sid, seq), e13, e25, ct in zip(data, r13a, r25a, cta):
         filen = npyfile + "/" + sid
-        np.savez_compressed(filen, s=seq, e13=e13, e25=e25, e33=e33, ct=ct)
+        np.savez_compressed(filen, s=seq, e13=e13, e25=e25, ct=ct)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -115,7 +203,7 @@ def main():
     parser.add_argument("--gpu", help="using gpu, otherwise using cpu", default=False, required=False)
     parser.add_argument("--batchsize", help="batchsize; default 1", default=1, required=False)
     parser.add_argument("--overwrite", help="redo if npy exists; otherwise skip if exists", type=bool, default=False, required=False)
-    parser.add_argument("--maxlen", help="max length of sequence to embed", type=int, default=800, required=False)
+    parser.add_argument("--maxlen", help="max length of sequence to embed", type=int, default=1000, required=False)
     args = parser.parse_args()
 
     if not os.path.exists(args.npy):
@@ -155,60 +243,15 @@ def main():
                 print(f"seq {seqid[idx]} already exists")
                 continue
 
+            # Split sequence if too long and embed individually
             if len(seqseq[idx]) > args.maxlen:
                 print(f"seq {seqid[idx]} too long {len(seqseq[idx])}, splitting")
-
-                embed = []
-                for i in range(0, len(seqseq[idx]), args.maxlen):
-                    subseq = seqseq[idx][i:i+args.maxlen+100]
-                    if len(subseq) > 100:
-                        embed.append((seqid[idx], seqseq[idx][i:i+args.maxlen]))
-
-                edata = {'e13': [], 'e25': [], 'ct': []}
-                for emb in embed:
-                    _, _, batch_tokens = batch_converter([emb])  # batch_labels, batch_strs
-                    batch_tokens = batch_tokens.to(device)
-                    with torch.no_grad():
-                        results = model(batch_tokens, repr_layers=[13, 25], return_contacts=True)
-                    edata['e13'].append(results["representations"][13].cpu().numpy())
-                    edata['e25'].append(results["representations"][25].cpu().numpy())
-                    edata['ct'].append(results["contacts"].cpu().numpy())
-
-                for dat in list(edata.keys()):
-                    if dat.startswith('e'):
-                        full_emb = np.array([])
-                        for i, emb in enumerate(edata[dat]):
-                            emb = emb[0][1:-1]
-                            if len(full_emb) == 0:
-                                full_emb = emb
-                                continue
-
-                            # Average the last 100 positions of the previous embedding with the first 100 positions of the current embedding
-                            avg = (full_emb[-100:] + emb[:100]) / 2
-
-                            # Replace the last 100 positions of the previous embedding with the average
-                            full_emb[-100:] = avg
-
-                            # Add rest of current embedding
-                            full_emb = np.concatenate((full_emb, emb[100:]), axis=0)
-
-                        edata[dat] = full_emb
-
-                    else:
-                        full_contacts = np.array([])
-                        for i, cont in enumerate(edata[dat]):
-                            cont = cont[0]
-                            if len(full_contacts) == 0:
-                                full_contacts = cont
-                                continue
-
-                            # Combine the contacts
-                            full_contacts = combine_contacts(full_contacts, cont, inc = 800, times = i)
-
-                        edata[dat] = full_contacts
-
+                embed = split_seq(seqseq, seqid, idx, args.maxlen)
+                edata = split_emb(embed, batch_converter, device, model)
+                edata['e13'] = avg_emb(edata['e13'])
+                edata['e25'] = avg_emb(edata['e25'])
+                edata['ct'] = avg_ct(edata['ct'])
                 np.savez_compressed(filen, s=seqseq[idx], e13=edata['e13'], e25=edata['e25'], ct=edata['ct'])
-
                 continue
 
             # Add each sequence to list of sequences to embed
