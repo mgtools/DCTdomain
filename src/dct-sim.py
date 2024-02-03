@@ -163,7 +163,7 @@ def all_sim(npzfile: str, output: str):
         output (str): file to save similarity between each protein pair.
     """
 
-    dct, seqid = load_dct(npzfile, asmap=True)
+    dct, seqid = load_dct(npzfile, asmap=False)
     totseq = len(seqid)
     for i in range(totseq - 1):
         for j in range(i + 1, totseq):

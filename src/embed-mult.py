@@ -37,7 +37,7 @@ def readfasta(filename: str, batchsize: int) -> list:
     yield seqid, seqseq
     inf.close()
 
-def split_seq(seqseq: str, seqid: str, idx: int, maxlen: int) -> list:
+def split_seq(seqseq: str, seqid: str, idx: int, maxlen: int, overlap: int) -> list:
     """Returns a list of (seqid, subseq) tuples, where subseq is a substring of seqseq[idx] of
     length maxlen.
 
@@ -46,18 +46,16 @@ def split_seq(seqseq: str, seqid: str, idx: int, maxlen: int) -> list:
         seqid (str): sequence id
         idx (int): index of sequence in seqseq
         maxlen (int): maximum length of subseq
+        overlap (int): number of overlapping positions between adjacent subseqs
 
     Returns:
         list of (seqid, subseq) tuples
     """
 
     embed = []
-    for i in range(0, len(seqseq[idx]), maxlen):
-        if i == 0:
-            subseq = seqseq[idx][i:i+maxlen]
-        else:
-            subseq = seqseq[idx][i-200:i+maxlen-200]
-        if len(subseq) > 200:
+    for i in range(0, len(seqseq[idx]), maxlen-overlap):
+        subseq = seqseq[idx][i:i+maxlen]
+        if len(subseq) > overlap:
             embed.append((seqid[idx], subseq))
     return embed
 
@@ -87,11 +85,12 @@ def split_emb(embed: list, batch_converter: esm.Alphabet, device: str, model: es
         edata['ct'].append(results["contacts"].cpu().numpy())
     return edata
 
-def avg_emb(embeds: list) -> np.ndarray:
+def avg_emb(embeds: list, overlap: int) -> np.ndarray:
     """Returns a single embedding by averaging and concatenating a list of embeddings.
 
     Args:
         embeds (list): list of (seqid, np.ndarray) tuples
+        overlap (int): number of overlapping positions between adjacent embeddings
     Returns:
         numpy array: single 1D embedding
     """
@@ -102,9 +101,9 @@ def avg_emb(embeds: list) -> np.ndarray:
         if len(full_emb) == 0:
             full_emb = emb
             continue
-        avg = (full_emb[-200:] + emb[:200]) / 2  # avg adjacent positions
-        full_emb[-200:] = avg  # replace last 200 positions of previous emb with avg
-        full_emb = np.concatenate((full_emb, emb[200:]), axis=0)  # concat rest of new emb
+        avg = (full_emb[-overlap:] + emb[:overlap]) / 2  # avg adjacent positions
+        full_emb[-overlap:] = avg  # replace overlapping positions of previous emb with avg
+        full_emb = np.concatenate((full_emb, emb[overlap:]), axis=0)  # concat rest of new emb
     return full_emb
 
 def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -> np.ndarray:
@@ -150,11 +149,12 @@ def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -
 
     return zeros1
 
-def avg_ct(contacts: list) -> np.ndarray:
+def avg_ct(contacts: list, increase: int) -> np.ndarray:
     """Returns a single contact map by averaging and combining a list of contact maps.
 
     Args:
         contacts (list): list of (seqid, np.ndarray) tuples
+        increase (int): number of indices to increase size of contact maps
 
     Returns:
         numpy array: single 2D contact map
@@ -166,7 +166,7 @@ def avg_ct(contacts: list) -> np.ndarray:
         if len(full_contacts) == 0:  # initialize full array
             full_contacts = cont
             continue
-        full_contacts = combine_contacts(full_contacts, cont, inc = 800, times = i)
+        full_contacts = combine_contacts(full_contacts, cont, inc = increase, times = i)
     return full_contacts
 
 def embed_batch(model: esm.pretrained, batch_tokens: torch.Tensor, data: list, npyfile: str):
@@ -246,11 +246,12 @@ def main():
             # Split sequence if too long and embed individually
             if len(seqseq[idx]) > args.maxlen:
                 print(f"seq {seqid[idx]} too long {len(seqseq[idx])}, splitting")
-                embed = split_seq(seqseq, seqid, idx, args.maxlen)
+                overlap = 200
+                embed = split_seq(seqseq, seqid, idx, args.maxlen, overlap)
                 edata = split_emb(embed, batch_converter, device, model)
-                edata['e13'] = avg_emb(edata['e13'])
-                edata['e25'] = avg_emb(edata['e25'])
-                edata['ct'] = avg_ct(edata['ct'])
+                edata['e13'] = avg_emb(edata['e13'], overlap)
+                edata['e25'] = avg_emb(edata['e25'], overlap)
+                edata['ct'] = avg_ct(edata['ct'], args.maxlen-overlap)
                 np.savez_compressed(filen, s=seqseq[idx], e13=edata['e13'], e25=edata['e25'], ct=edata['ct'])
                 continue
 
