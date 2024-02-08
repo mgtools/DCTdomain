@@ -27,8 +27,6 @@ Depending on the length of the protein sequences in your fasta file, you may nee
 
 If a sequence's length exceeds the threshold, the script will split the sequence into smaller segments with overlapping segments (length 100) and embed each sub-sequence separately. The overlaps are averaged to produce the final embedding. This method of embedding sequences gave similar results to embedding the full sequence, but is significantly faster and allows for the embedding of any sequence regardless of it's length.
 
-```
-
 ## Comparing DCT fingerprints
 Once the DCT fingerprints are generated, they can be used for similarity detection by running the dct-sim.py script. This script can be run in three different modes. We will use the examples under test for demonstration purposes.
 
