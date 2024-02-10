@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 benchlist = ["pfam_max50", "pfam_nomax50", "pfam_localpfam_nomax50", "supfam_nomax50", "gene3d_nomax50"]
 benchlist_show = ["max50", "pfam_nomax50", "local", "supfam_nomax50", "gene3d_nomax50"]
-approaches = ["DCTMCdomain", "DCTMCglobal", "csblast", "phmmer", "hhsearch", "blast", "fasta", "ublast", "usearch"]
-approaches_show = ["DCTdomain", "DCTglobal", "CS-BLAST", "phmmer", "HHsearch", "BLAST", "FASTA", "UBLAST", "USEARCH"]
+approaches = ["DCTMCdomain", "DCTMCglobal", "csblast", "phmmer", "hhsearch", "blast", "fasta", "ublast", "usearch", "prost"]
+approaches_show = ["DCTdomain", "DCTglobal", "CS-BLAST", "phmmer", "HHsearch", "BLAST", "FASTA", "UBLAST", "USEARCH", "PROST"]
 
 for b in range(len(benchlist)):  #pylint: disable=consider-using-enumerate
     bench = benchlist[b]
