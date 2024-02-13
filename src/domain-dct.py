@@ -1,4 +1,4 @@
-"""Gets DCT fingerprints for a directory of protein embeddings.
+"""Gets DCT fingerprints for a directory of protein embeddings and predicted domains.
 
 Yuzhen Ye, Indiana University, Nov 2023
 """
@@ -59,8 +59,7 @@ def domainEmb_help(a_list: list, s_list: list) -> np.ndarray:
     for idx in range(len(a_list)):  #pylint: disable=C0200)
         a1 = a_list[idx]
         s1 = s_list[idx]
-        #a1: excluding begining and ending positions
-        q1 = quant2D(a1[:, 1:-1], s1[0], s1[1])
+        q1 = quant2D(a1, s1[0], s1[1])
         if idx == 0:
             q = q1
         else:
@@ -98,8 +97,8 @@ def domainEmb(a_list: list, s_list: list, domstr: str) -> tuple:
         embsel = []
         for seg in segs:
             subs = seg.split("-")
-            #beg end start at index 1 (not 0); same as the embedding which has the beginning of the sequence as the first token
-            beg, end = int(subs[0]), int(subs[1]) + 1
+            #beg end start at index 1 (not 0)
+            beg, end = int(subs[0]), int(subs[1])
             if not embsel:
                 for l in range(num_layer):
                     embsel.append(a_list[l][beg:end, :])
@@ -130,17 +129,15 @@ def main():
             continue
         subs = aline.strip().split()
         if len(subs) >= 3:
-            (seqid, domsize, domstr) = subs[0:3]
+            (seqid, _, domstr) = subs[0:3]  # domsize is not used
         else:
-            seqid, domsize, domstr = subs[0], 1, ""
+            seqid, _, domstr = subs[0], 1, ""
         add += 1
         print(f"generate DCT fingerprint for protein {add} {seqid}")
         filen = args.npy + "/" + seqid + ".npz"
         if os.path.exists(filen):
             data = np.load(filen)
-            #layer 14: 3x85, layer 26, 5x44
-            #print(f"embedding shape {data['e25'].shape}")
-            (dom, dcta) = domainEmb([data['e13'], data['e25']], [[3, 85], [5, 44]], domstr)
+            (dom, dcta) = domainEmb([data['e15'], data['e21']], [[3, 80], [3, 80]], domstr)
             tosave_seqid.append(seqid)
             tosave_idx.append(len(tosave_dom))
             tosave_dom.extend(dom)
