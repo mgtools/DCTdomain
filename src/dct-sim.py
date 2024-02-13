@@ -111,7 +111,7 @@ def pair_sim(npzfile: str, pairfile: str, pairfound: str, output: str):
             tmp = f"{s1} {s2} {maxs} {s}"
             if output:
                 with open(output, "a", encoding='utf8') as out:
-                    out.write(tmp + "\n")
+                    out.write(f'{tmp}\n')
             else:
                 print(tmp)
             if pairfound:
@@ -134,7 +134,7 @@ def db_search(npzfile: str, dbfile: str, top: int, threshold: float, output: str
         output (str): file to save hits.
     """
 
-    dct, seqid = load_dct(npzfile, asmap=True)
+    dct, seqid = load_dct(npzfile, asmap=False)
     totseq = len(seqid)
     db_dct, db_seqid = load_dct(dbfile, asmap=False)
     db_tot = len(db_seqid)
@@ -142,7 +142,7 @@ def db_search(npzfile: str, dbfile: str, top: int, threshold: float, output: str
         results = []
         for q in range(db_tot):
             (maxs, s) = domain_sim(dct[i], db_dct[q])
-            results.append([db_seqid[q], s, maxs])
+            results.append([db_seqid[q], maxs, s])
         results_sorted = sorted(results, key=itemgetter(2), reverse=True)
         for q in range(db_tot):
             if (q >= top) and (results_sorted[q][2] < threshold):
@@ -191,6 +191,7 @@ def main():
     if args.output:
         out = open(args.output, "w", encoding='utf8')
         out.write("#prot1 prot2 sim-domain sim-global\n")
+        out.close()
     else:
         print("#prot1 prot2 sim-domain sim-global")
 
