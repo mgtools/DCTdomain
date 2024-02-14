@@ -1,10 +1,28 @@
 This benchmark contains 351 pairs of G6PD containing proteins (for a total of 26 proteins) 
 
-Two ways to run the pipelines: 
+Two ways to run the pipeline: 
 
-  bash commands.sh
+```
+bash commands.sh
+```
+  
+or 
 
-  or 
+```
+bash commands-steps.sh
+```
 
-  bash commands-steps.sh
-  (to see the indiviudal steps)
+to see the indiviudal steps of the pipeline.
+
+To replicate the histograms found in Figure 6 of the paper, run the following script:
+
+```
+python hist.py
+```
+
+If you would like to see the protein embeddings and do not want to run the pipeline, you can download the embeddings as follows:
+
+```
+wget -r -np -nd https://omics.informatics.indiana.edu/DCTprot/NPY
+```
+
