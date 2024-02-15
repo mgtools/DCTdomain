@@ -1,8 +1,8 @@
-#python ../../src/embed-mult.py --input test.fasta --npy npy
 #npy files are large and they can be removed after contact maps are extracted 
+python ../../src/embed-mult.py --input test.fasta --npy npy
 
-#python ../../src/embed2ce.py --input test.fasta --npy npy --ce CE
-
+# CE files are needed for domain prediction
+python ../../src/embed2ce.py --input test.fasta --npy npy --ce CE
 bash ../../src/domaincut.sh <test.info > test.dom
 
 #test.info -- containing "ground-truth" domain segmentations (from SCOP)

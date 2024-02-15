@@ -1,0 +1,13 @@
+This benchmark contains 2549 protein sequences used to test domain prediction performance by FUpred and RecCut on ESM-2 predicted contact maps. You can download the necessary contact map files with the following command:
+
+```
+wget -r -np -nd https://omics.informatics.indiana.edu/DCTprot/CE/
+```
+
+Or if you would like to run the pipeline for RecCut yourself, you can run the following command:
+
+```
+bash commands.sh
+```
+
+If you would like to use FUpred instead of RecCut, you can download it from their link: https://zhanggroup.org/FUpred/download/FUpred.zip and simply call their binary file with any/all of the files located in the CE directory. Note that it will take much longer to run FUpred than RecCut for similar results.
