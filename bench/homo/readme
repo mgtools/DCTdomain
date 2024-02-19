@@ -1,6 +1,23 @@
-This folder contains files for the homology detection benchmarking 
+This folder contains files for the homology detection benchmarks. We use five different datasets:
+- pfam-max50: protein sequences with identical pfam domain architecture, less than 50 amino acids between domains
+- pfam-nomax50: identical pfam domain architecture, no limit on number of amino acids between domains
+- pfam-local: sequences share some pfam domains, but not all 
+- gene3d-nomax50: same as pfam-nomax50 but based on CATH domains
+- supfam-nomax50: same as pfam-nomax50 but based on SCOP domains
 
-* Due to the file sizes, the NPY and CE files are not inclucded in this folder
-* The DCT fingerprints are saved to *.npz files 
-* Call the following command to compute the similarity between the given pairs of proteins
-  bash commands.sh
+Each dataset contains a .fasta file containing all of the sequences, a .pair file containing the homologous/non-homologous sequences based off the above criteria, and a .txt file that contains the DCT similarity scores for each pair. In results/ you can find all results from the other homology inference tools we benchmarked on each dataset in our paper. The readme in that directory goes into detail for each tool what command line calls we made and how to replicate our ROC plots.
+
+You can download the fingerprint files for each dataset by running the following command:
+
+```
+wget -r -np -nd https://omics.informatics.indiana.edu/DCTprot/pfam_max50-dct.npz
+```
+
+You can replace the last part of the URL with the dataset you would like to download (pfam_max50-dct.npz, pfam_nomax50-dct.npz, gene3d_nomax50-dct.npz, and supfam_nomax50-dct.npz). The pfam_nomax50-dct.npz file contains fingerprints for all proteins in the pfam-nomax50 and pfam-local datasets.
+
+
+With the dct.npz files, you can call the following command to compute the similarity between all pairs of proteins in each dataset:
+
+```
+bash commands.sh
+```
