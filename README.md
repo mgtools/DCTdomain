@@ -1,6 +1,8 @@
 # DCTdomain
 Protein domain-level embedding via ESM-2 and DCT for homology detection and similarity search.
 
+Paper: https://www.biorxiv.org/content/10.1101/2023.11.27.567555v2
+
 ## Approach
 An overview of the pipeline is visualized in the figure below:
 
@@ -25,10 +27,16 @@ fingerprint.sh takes a fasta file with any number of sequences. This will produc
 ### Embedding protein sequences
 Depending on the length of the protein sequences in your fasta file, you may need to adjust the '--maxlen' parameter when calling embed-mult.py in fingerprint.sh. The default value is 1000, for which a CPU with 32GB of RAM should be sufficient. You can increase or decrease this value depending on your hardware. If you have a GPU, you can also use the '--gpu' option to speed up the embedding process.
 
-If a sequence's length exceeds the threshold, the script will split the sequence into smaller segments with overlapping segments (length 100) and embed each sub-sequence separately. The overlaps are averaged to produce the final embedding. This method of embedding sequences gave similar results to embedding the full sequence, but is significantly faster and allows for the embedding of any sequence regardless of it's length.
+If a sequence's length exceeds the threshold, the script will split the sequence into smaller segments with overlapping segments (length 200) and embed each sub-sequence separately. The overlaps are averaged to produce the final embedding. This method of embedding sequences gave similar results to embedding the full sequence, but is significantly faster and allows for the embedding of any sequence regardless of it's length.
+
+There is also a '--checkpoint' parameter that can be used to specify which ESM-2 model to embed with. The default is esm2_t30_150M_UR50D, which is the model used for the results found in the paper. Contact maps from t33 were found be more accurate for domain prediction (results in Supplementary Information), but using t30 was found to be more accurate for our homology inference task. You can use esm2_t33_650_UR50D by specifying:
+
+```
+python src/embed-mult.py --input <input.fa> --npy <directory> --checkpoint t33
+```
 
 ## Comparing DCT fingerprints
-Once the DCT fingerprints are generated, they can be used for similarity detection by running the dct-sim.py script. This script can be run in three different modes. We will use the examples under test for demonstration purposes.
+Once the DCT fingerprints are generated, they can be used for similarity detection by running the dct-sim.py script. This script can be run in three different modes. We will use the examples under test/ for demonstration purposes.
 
 ```
 cd test
@@ -81,6 +89,7 @@ And install the following dependences:
 
 python3 >= 3.9
 python packages:
+
     -fair-esm
     -torch
     -numpy
