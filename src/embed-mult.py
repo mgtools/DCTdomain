@@ -1,7 +1,7 @@
 """Embeds a FASTA file using multiple layers of ESM2.
 
 Usage:
-    embed-mult.py --input <fasta> --npy <npy> [--gpu] [--overwrite]
+    embed-mult.py --input <fasta> --npy <npy> [--gpu] [--maxlen] [--overwrite] [--checkpoint]
 
 Yuzhen Ye, Indiana University, Nov 2023
 """
@@ -57,26 +57,6 @@ def split_seq(seqseq: str, seqid: str, maxlen: int, overlap: int) -> list:
             embed.append((seqid, subseq))
     return embed
 
-def avg_emb(embeds: list, overlap: int) -> np.ndarray:
-    """Returns a single embedding by averaging and concatenating a list of embeddings.
-
-    Args:
-        embeds (list): list of (seqid, np.ndarray) tuples
-        overlap (int): number of overlapping positions between adjacent embeddings
-    Returns:
-        numpy array: single 1D embedding
-    """
-
-    full_emb = np.array([])
-    for emb in embeds:
-        if len(full_emb) == 0:
-            full_emb = emb
-            continue
-        avg = (full_emb[-overlap:] + emb[:overlap]) / 2  # avg adjacent positions
-        full_emb[-overlap:] = avg  # replace overlapping positions of previous emb with avg
-        full_emb = np.concatenate((full_emb, emb[overlap:]), axis=0)  # concat rest of new emb
-    return full_emb
-
 def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -> np.ndarray:
     """Returns a larger square matrix combining two smaller square matrices.
 
@@ -120,25 +100,6 @@ def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -
 
     return zeros1
 
-def avg_ct(contacts: list, increase: int) -> np.ndarray:
-    """Returns a single contact map by averaging and combining a list of contact maps.
-
-    Args:
-        contacts (list): list of (seqid, np.ndarray) tuples
-        increase (int): number of indices to increase size of contact maps
-
-    Returns:
-        numpy array: single 2D contact map
-    """
-
-    full_contacts = np.array([])
-    for i, cont in enumerate(contacts):
-        if len(full_contacts) == 0:  # initialize full array
-            full_contacts = cont
-            continue
-        full_contacts = combine_contacts(full_contacts, cont, inc = increase, times = i)
-    return full_contacts
-
 def embed_seq(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, seqseq: str, device: str) -> dict:
     """Returns a dictionary of embeddings and contacts for a single sequence.
 
@@ -172,13 +133,55 @@ def embed_seq(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, 
     cta = results["contacts"].cpu()[0]
     return {'e15': r15a, 'e21': r21a, 'ct': cta}
 
+def get_embeds(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, seqseq: str, device: str, maxlen: int) -> dict:
+    """Returns a dictionary of embeddings and contacts for a single sequence. If the sequence is
+    too long, it is split into smaller, overlapping sequences. The overlapping regions are averaged
+    and the non-overlapping regions are concatenated.
+
+    Args:
+        model (esm.pretrained): ESM model
+        batch_converter (esm.Alphabet): ESM tokenizer
+        seqid (str): sequence id
+        seqseq (str): sequence
+        device (str): device to use for embedding
+        maxlen (int): maximum length of subseq
+
+    Returns:
+        dict: dictionary where key is output label and value is the embedding/contact map
+    """
+
+    # Split sequence if too long and embed individually
+    overlap = 200
+    if len(seqseq) > maxlen:
+        print(f"seq {seqid} too long {len(seqseq)}, splitting")
+        subseqs = split_seq(seqseq, seqid, maxlen, overlap)
+    else:  # otherwise embed whole sequence
+        print(f"seq {seqid} {len(seqseq)}")
+        subseqs = [(seqid, seqseq)]
+
+    # Embed each subsequence and combine them if necessary
+    edata = {}
+    for i, seq in enumerate(subseqs):
+        embed = embed_seq(model, batch_converter, seq[0], seq[1], device)
+        if not edata:
+            edata = embed
+            continue
+        for key, value in embed.items():
+            if key == 'ct':
+                edata[key] = combine_contacts(edata[key], value, maxlen-overlap, i)
+                continue
+            edata[key][-overlap:] = (edata[key][-overlap:] + value[:overlap]) / 2
+            edata[key] = np.concatenate((edata[key], value[overlap:]), axis=0)
+    return edata
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="FASTA file", required=True)
     parser.add_argument("--npy", help="save embeddings and contact to files under the given folder (one for each protein)", required=True)
     parser.add_argument("--gpu", help="using gpu, otherwise using cpu", default=True, required=False)
-    parser.add_argument("--overwrite", help="redo if npy exists; otherwise skip if exists", type=bool, default=False, required=False)
     parser.add_argument("--maxlen", help="max length of sequence to embed", type=int, default=1000, required=False)
+    parser.add_argument("--overwrite", help="redo if npy exists; otherwise skip if exists", type=bool, default=False, required=False)
+    parser.add_argument("--checkpoint", help="ESM-2 model checkpoint", default="t30", required=False)
     args = parser.parse_args()
 
     if not os.path.exists(args.npy):
@@ -189,7 +192,10 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() and args.gpu else 'cpu')
 
     # Load ESM-2 model
-    model, alphabet = esm.pretrained.esm2_t30_150M_UR50D()
+    if args.checkpoint == "t30":
+        model, alphabet = esm.pretrained.esm2_t30_150M_UR50D()
+    elif args.checkpoint == "t33":
+        model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
     batch_converter = alphabet.get_batch_converter()
     model.eval()  # disables dropout for deterministic results
     model.to(device)
@@ -216,27 +222,9 @@ def main():
         if (not args.overwrite) and os.path.exists(filen):  # skip if file exists
             print(f"seq {seqid} already exists")
             continue
-
-        # Split sequence if too long and embed individually
-        if len(seqseq) > args.maxlen:
-            print(f"seq {seqid} too long {len(seqseq)}, splitting")
-            overlap = 200
-            edata = {'e15': [], 'e21': [], 'ct': []}
-            subseqs = split_seq(seqseq, seqid, args.maxlen, overlap)
-            for seq in subseqs:
-                embed = embed_seq(model, batch_converter, seq[0], seq[1], device)
-                for key in edata:  #pylint: disable=C0206
-                    edata[key].append(embed[key])
-            edata['e15'] = avg_emb(edata['e15'], overlap)
-            edata['e21'] = avg_emb(edata['e21'], overlap)
-            edata['ct'] = avg_ct(edata['ct'], args.maxlen-overlap)
-            np.savez_compressed(filen, s=seqseq, e15=edata['e15'], e21=edata['e21'], ct=edata['ct'])
-            continue
-
-        # Add each sequence to list of sequences to embed
-        print(f"seq {seqid} {len(seqseq)}")
-        edata = embed_seq(model, batch_converter, seqid, seqseq, device)
+        edata = get_embeds(model, batch_converter, seqid, seqseq, device, args.maxlen)
         np.savez_compressed(filen, s=seqseq, e15=edata['e15'], e21=edata['e21'], ct=edata['ct'])
+
 
 if __name__ == "__main__":
     main()
