@@ -79,7 +79,7 @@ void SplitDomain_2cuts(int cuts1, int cuts2, std::vector<std::pair<int, int>>& d
 		if(cutsite[i] < cuts2)	{
 			c2 = i + 1;
 		}
-	       	if(cutsite[i] < cuts1)	{
+	       	if(cutsite[i] <= cuts1)	{
 			c1 = i;
 			break;
 		}
@@ -116,7 +116,9 @@ void SplitDomain_2cuts(int cuts1, int cuts2, std::vector<std::pair<int, int>>& d
 		len1 = cuts1;
 	}
 	c1 ++; // cuts1 within the segment of c1
-	domain1.push_back(std::make_pair(domains[c1].first, domains[c1].first + len1 - 1));
+	if(len1 > 0) {
+		domain1.push_back(std::make_pair(domains[c1].first, domains[c1].first + len1 - 1));
+	}
 
 	// create the segments in the 2nd domain
 	if(c2 > c1 && cutsite[c1 - 1] + len1 < cutsite[c1])	{
