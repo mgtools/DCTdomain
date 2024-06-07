@@ -57,48 +57,34 @@ def split_seq(seqseq: str, seqid: str, maxlen: int, overlap: int) -> list:
             embed.append((seqid, subseq))
     return embed
 
-def combine_contacts(mat1: np.ndarray, mat2: np.ndarray, inc: int, times: int) -> np.ndarray:
+def combine_contacts(mat1: torch.Tensor, mat2: torch.Tensor, inc: int, times: int) -> torch.Tensor:
     """Returns a larger square matrix combining two smaller square matrices.
 
-    mat1 has values starting from the top left corner, mat2 has values starting from the bottom
-    right corner, and the overlapping indices are averaged. The number of overlapping indices is
-    determine by the inc argument.
+    Mat1 and mat2 are both square matrices. New matrix (mat3) is of size (n+m, n+m) where
+    n and m are the dimensions of mat1 and mat2. Overlapping indices are averaged.
 
     Args:
-        mat1 (numpy array): Running matrix of contacts (n x n).
-        mat2 (numpy array): Matrix to be added to mat1 (m x m).
+        mat1 (torch.Tensor): Running matrix of contacts (n x n).
+        mat2 (torch.Tensor): Matrix to be added to mat1 (m x m).
         inc (int): Number of indices to increase the size of the matrix by (inc x inc).
         times (int): Running total of times the function has been called.
 
     Returns:
-        numpy array: Matrix of combined contacts (n+inc x n+inc).
+        torch.Tensor: Matrix of combined contacts (n+inc x n+inc).
     """
 
-    # Create new matrices to store combined contacts
-    mlen = len(mat1)
-    size = mlen + inc
-    zeros1 = np.zeros((size, size))
-    zeros2 = np.zeros((size, size))
+    # Add space to mat1
+    olp = inc * times
+    mlen1, mlen2 = mat1.size(0), mat2.size(0)
+    mlen3 = olp + mlen2
+    new_mat = torch.zeros((mlen3, mlen3), device=mat1.device)
+    new_mat[:mlen1, :mlen1] = mat1
 
-    # Add input matrices to new matrices
-    olp = inc*times
-    zeros1[:mlen, :mlen] = mat1
-    zeros2[:len(mat2), :len(mat2)] = mat2
-    zeros2 = np.roll(zeros2, olp, axis = 0)
-    zeros2 = np.roll(zeros2, olp, axis = 1)
+    # Add mat2 to new_mat
+    new_mat[olp:mlen3, olp:mlen3] = new_mat[olp:mlen3, olp:mlen3] + mat2
+    new_mat[olp:mlen1, olp:mlen1] = new_mat[olp:mlen1, olp:mlen1] / 2
 
-    # Average the overlapping indices
-    zeros1[olp:mlen, olp:mlen] = (zeros1[olp:mlen, olp:mlen] + zeros2[olp:mlen, olp:mlen]) / 2
-
-    # Add rest of zeros2 to zeros1
-    zeros1[olp:size, mlen:size] = zeros2[olp:size, mlen:size]
-    zeros1[mlen:size, olp:mlen] = zeros2[mlen:size, olp:mlen]
-
-    # If any row or column is all 0's, remove it
-    zeros1 = zeros1[~np.all(zeros1 == 0, axis=1)]
-    zeros1 = zeros1[:, ~np.all(zeros1 == 0, axis=0)]
-
-    return zeros1
+    return new_mat
 
 def embed_seq(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, seqseq: str, device: str) -> dict:
     """Returns a dictionary of embeddings and contacts for a single sequence.
@@ -128,9 +114,9 @@ def embed_seq(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, 
         sys.exit()
 
     # indexing [0][1:-1] removes the start and end tokens
-    r15a = results["representations"][15].cpu()[0][1:-1]
-    r21a = results["representations"][21].cpu()[0][1:-1]
-    cta = results["contacts"].cpu()[0]
+    r15a = results["representations"][15][0][1:-1]
+    r21a = results["representations"][21][0][1:-1]
+    cta = results["contacts"][0]
     return {'e15': r15a, 'e21': r21a, 'ct': cta}
 
 def get_embeds(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str, seqseq: str, device: str, maxlen: int) -> dict:
@@ -171,7 +157,12 @@ def get_embeds(model: esm.pretrained, batch_converter: esm.Alphabet, seqid: str,
                 edata[key] = combine_contacts(edata[key], value, maxlen-overlap, i)
                 continue
             edata[key][-overlap:] = (edata[key][-overlap:] + value[:overlap]) / 2
-            edata[key] = np.concatenate((edata[key], value[overlap:]), axis=0)
+            edata[key] = torch.cat((edata[key], value[overlap:]), axis=0)
+
+    # Convert to numpy arrays (on CPU)
+    for key, value in edata.items():
+        edata[key] = value.cpu().numpy()
+
     return edata
 
 def main():
