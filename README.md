@@ -95,6 +95,14 @@ python packages:
     -numpy
     -scipy
 
+Or you can create and activate a conda environment as follows:
+
+```
+cd DCTdomain/
+conda create -f env.yml
+conda activate dctdomain
+```
+
 ## Final words about RecCut:
 
 If RecCut doesn't work properly on your computer, you may consider to re-compile it as follows:
