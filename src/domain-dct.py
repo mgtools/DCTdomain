@@ -39,10 +39,33 @@ def quant2D(emb: np.ndarray,n=5,m=44) -> np.ndarray:
         1D iDCT quantization of a 2D embedding
     """
 
-    dct = iDCTquant(emb[1:len(emb)-1],n)
+    dct = iDCTquant(emb,n)
     ddct = iDCTquant(dct.T,m).T
     ddct = ddct.reshape(n*m)
     return (ddct*127).astype('int8')
+
+def get_domains(domstr: str, length: int) -> list:
+    """Returns a list of domains from a string.
+
+    Args:
+        domstr (str): protein domains ex. "1-64;65-128"
+        length (int): length of the protein
+
+    Returns:
+        list of domains
+    """
+
+    # Get each domain
+    if not domstr:
+        doms = []
+    else:
+        if domstr[-1] == ';':
+            domstr = domstr[:-1]
+        doms = domstr.split(";")
+    if len(doms) != 1: #no domain given or multiple domain
+        doms.append(f"1-{length}") #produce whole protein for multi domain proteins
+
+    return doms
 
 def domainEmb_help(a_list: list, s_list: list) -> np.ndarray:
     """Using multiple layers (one layer is just a special case).
@@ -79,16 +102,7 @@ def domainEmb(a_list: list, s_list: list, domstr: str) -> tuple:
     """
 
     num_layer = len(a_list)
-
-    # Get each domain
-    if not domstr:
-        doms = []
-    else:
-        if domstr[-1] == ';':
-            domstr = domstr[:-1]
-        doms = domstr.split(";")
-    if len(doms) != 1: #no domain given or multiple domain
-        doms.append(f"1-{len(a_list[0]) - 2}") #produce whole protein for multi domain proteins
+    doms = get_domains(domstr, len(a_list[0]))
 
     # Get each domain's fingerprint
     fprints = []
@@ -97,8 +111,7 @@ def domainEmb(a_list: list, s_list: list, domstr: str) -> tuple:
         embsel = []
         for seg in segs:
             subs = seg.split("-")
-            #beg end start at index 1 (not 0)
-            beg, end = int(subs[0]), int(subs[1])
+            beg, end = int(subs[0])-1, int(subs[1])  #python index starts from 0
             if not embsel:
                 for l in range(num_layer):
                     embsel.append(a_list[l][beg:end, :])

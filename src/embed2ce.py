@@ -105,7 +105,7 @@ def main():
     if not os.path.exists(args.ce):
         os.mkdir(args.ce)
     if not os.path.exists(args.npy):
-        sys.exit(args.npy, " doesn't exist")
+        sys.exit(f"{args.npy} doesn't exist")
 
     seqid, seqseq = readfasta(args.input)
     for idx in range(len(seqid)):  #pylint: disable=C0200
