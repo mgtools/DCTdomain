@@ -79,7 +79,7 @@ void SplitDomain_2cuts(int cuts1, int cuts2, std::vector<std::pair<int, int>>& d
 		if(cutsite[i] < cuts2)	{
 			c2 = i + 1;
 		}
-	       	if(cutsite[i] <= cuts1)	{
+	    if(cutsite[i] <= cuts1)	{
 			c1 = i;
 			break;
 		}
@@ -108,7 +108,9 @@ void SplitDomain_2cuts(int cuts1, int cuts2, std::vector<std::pair<int, int>>& d
 	//copy cuts in (0, cuts1) into cutsite 1
 	for(i = 0; i <= c1; i ++)	{
 		domain1.push_back(domains[i]);
-		cutsite1.push_back(cutsite[i] + len);
+		if(cutsite[i] != cuts1) {
+			cutsite1.push_back(cutsite[i] + len);
+		}
 	}
 	if(c1 >= 0)	{
 		len1 = cuts1 - cutsite[c1];
