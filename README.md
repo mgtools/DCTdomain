@@ -78,29 +78,14 @@ G7PD -- pairs of G6PD containing proteins
 
 homo -- homology detection benchmarks
 
-## Requirements
-To install DCTdomain, clone this repository:
+## Installation
+With git and conda, you can close this repository and install the required dependencies with the following commands:
 
 ```
 git clone https://github.com/mgtools/DCTdomain
-```
-
-And install the following dependences:
-
-python3 >= 3.9
-python packages:
-
-    -fair-esm
-    -torch
-    -numpy
-    -scipy
-
-Or you can create and activate a conda environment as follows:
-
-```
-cd DCTdomain/
-conda create -f env.yml
-conda activate dctdomain
+cd DCTdomain
+conda env create --file env.yml
+g++ -o src/RecCut src/RecCut.cpp
 ```
 
 ## Final words about RecCut:
