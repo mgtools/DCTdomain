@@ -1,18 +1,11 @@
 This benchmark contains 351 pairs of G6PD containing proteins (for a total of 26 proteins) 
 
-Two ways to run the pipeline: 
+To generate the results used the paper, run the following command from this directory:
 
 ```
-bash commands.sh
+python ../../src/make_db.py --fafile G6PD.fasta --dbfile G6PD --noindex
+python ../../src/dct-sim.py --pair G6PD.pair --dct G6PD-dct.npz --output G6PD-dctsim.txt
 ```
-  
-or 
-
-```
-bash commands-steps.sh
-```
-
-to see the indiviudal steps of the pipeline.
 
 To replicate the histograms found in Figure 6 of the paper, run the following script:
 
@@ -20,7 +13,7 @@ To replicate the histograms found in Figure 6 of the paper, run the following sc
 python hist.py
 ```
 
-If you would like to see the protein embeddings and do not want to run the pipeline, you can download the embeddings as follows:
+If you would like to see the protein embeddings, you can download them as follows:
 
 ```
 wget -r -np -nd https://omics.informatics.indiana.edu/DCTprot/NPY
