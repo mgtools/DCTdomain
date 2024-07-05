@@ -167,10 +167,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--fafile', type=str, required=False, help='fasta file to embed')
     parser.add_argument('--dbfile', type=str, required=True, help='db file to write to')
-    parser.add_argument('--maxlen', type=int, default=1000, help='max sequence length to embed')
+    parser.add_argument('--maxlen', type=int, default=500, help='max sequence length to embed')
     parser.add_argument('--cpu', type=int, default=1, help='number of cpus to use')
     parser.add_argument('--gpu', type=int, required=False, help='number of gpus to use')
     parser.add_argument('--noindex', action='store_true', help='toggle for not creating index')
+    parser.add_argument('--nonpz', action='store_true', help='toggle for not saving fingerprints')
+    parser.add_argument('--nodom', action='store_true', help='toggle for not writing domains')
     parser.add_argument('--out', type=str, default='', help='print progress to file')
     args = parser.parse_args()
 
@@ -197,7 +199,12 @@ def main():
         os.environ['OMP_NUM_THREADS'] = str(args.cpu)
         print('Creating index...')
         db.create_index()
-    db.save_fprints(f'{args.dbfile}.npz')
+    
+    # Save fingerprints to npz, doms to txt
+    if not args.nonpz:
+        db.save_fprints(f'{args.dbfile}-dct.npz')
+    if not args.nodom:
+        db.save_doms(f'{args.dbfile}.dom')
     db.close()
 
 

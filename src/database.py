@@ -361,8 +361,7 @@ class Database:
         seq, idx = '', 0
 
         # Only add sequence ID + starting index once, but add each domain and fingerprint
-        for i, row in enumerate(self.cur):
-            print(i, row)
+        for row in self.cur:
             fprint = np.load(BytesIO(row[2]), allow_pickle=True)
             if row[0] != seq:
                 seq = row[0]
@@ -372,8 +371,22 @@ class Database:
             fps.append(fprint)
             idx += 1
 
-            if i > 50:
-                break
-
         idxs.append(idx)
         np.savez(file, sid=seqs, idx=idxs, dom=doms, dct=fps)
+
+
+    def save_doms(self, file: str):
+        """Saves domains to a txt file.
+        """
+
+        select = """ SELECT pid, domain FROM fingerprints """
+        self.cur.execute(select)
+        doms: dict[str, list] = {}
+        for row in self.cur:
+            doms[row[0]] = doms.get(row[0], []) + [row[1]]
+
+        with open(file, 'w', encoding='utf8') as f:
+            for pid, domains in doms.items():
+                if len(domains) > 1:  # ignore whole protein
+                    domains = domains[:-1]
+                f.write(f'{pid} {len(domains)} {";".join(domains)}\n')
