@@ -8,66 +8,75 @@ An overview of the pipeline is visualized in the figure below:
 
 ![This is an image](https://github.com/mgtools/DCTdomain/blob/main/misc/DCTdomain-diag.png)
 
-## Programs/scripts
-This package contains programs and scripts for the following tasks:
-1) Programs/scripts required for generating ESM-2 embeddings and contact maps
-2) Apply RecCut to predict the domains given contact maps
-3) Generate DCT fingerprints (DCTdomain and DCTglobal) given predicted domains
-4) Calculate similarity between DCT fingerprints 
-
-## Generating DCT Fingerprints
-The pipeline to generate DCT fingerprints can be called by running the bash script as shown below:
+## Generating DCT fingerprints
+To create a database of DCT fingerprints for which you can query against, run the following command:
 
 ```
-bash src/fingerprint.sh <.fa file> <output1-name>
+python src/make_db.py --fafile <.fa file> --dbfile <output>
 ```
 
-fingerprint.sh takes a fasta file with any number of sequences. This will produce three output files, output.list which contains a list of all embedded protein sequence, output.dom which contains a list of predicted domains for each protein in the list file, and output-dct.npz which contains one (single-domain proteins) or more DCT fingerprints (multi-domain proteins) for each protein. Each individual embedding and top contacts for each sequence are saved under separate directories in case the embedding process is interrupted.
+This will generate a SQLite database file with two tables containing, one for protein sequences and one for DCT fingerprints. If the process is interrupted for any reason, you can restart it and every sequence that has already had fingerprints generated will be skipped.
 
-### Embedding protein sequences
-Depending on the length of the protein sequences in your fasta file, you may need to adjust the '--maxlen' parameter when calling embed-mult.py in fingerprint.sh. The default value is 1000, for which a CPU with 32GB of RAM should be sufficient. You can increase or decrease this value depending on your hardware. If you have a GPU, you can also use the '--gpu' option to speed up the embedding process.
-
-If a sequence's length exceeds the threshold, the script will split the sequence into smaller segments with overlapping segments (length 200) and embed each sub-sequence separately. The overlaps are averaged to produce the final embedding. This method of embedding sequences gave similar results to embedding the full sequence, but is significantly faster and allows for the embedding of any sequence regardless of it's length.
-
-There is also a '--checkpoint' parameter that can be used to specify which ESM-2 model to embed with. The default is esm2_t30_150M_UR50D, which is the model used for the results found in the paper. Contact maps from t33 were found be more accurate for domain prediction (results in Supplementary Information), but using t30 was found to be more accurate for our homology inference task. You can use esm2_t33_650_UR50D by specifying:
+You can interact with the database like any other SQLite database, but database.py provides a simple interface to interact with the database. For example, the following command will print basic information about the database, such the number of sequences, average length of sequences, and the number of fingerprints in the database:
 
 ```
-python src/embed-mult.py --input <input.fa> --npy <directory> --checkpoint t33
+from database import Database
+db = Database('<.db file>')
+db.db_info()
+db.close()
+```
+
+You can also search the database for a specific sequence with the following command:
+
+```
+db.seq_info('<fasta id>')
+```
+
+Alongside the database file, a .npz file will be generated as well for easy access to the DCT fingerprints. The .npz file has four arrays: 'sids' containing the sequence ID's, 'dom' containing the domain predictions for each fingerprint, 'dct' containing the DCT fingerprints corresponding to each domain, and 'idx' containing the index of the first domain/fingerprint in the 'dom' and 'dct' arrays corresponding to each sid. If you do not need the .npz file, you can use the `--nonpz` option to skip generating it.
+
+An .index file will also be generated to allow for faster searching of the database using FAISS. This index is a flat index and allows for KNN search with L1 distance. If you do not need the .index file, you can use the `--noindex` option to skip generating it.
+
+## Multiprocessing and GPU support
+Depending on the length of the protein sequences in your fasta file, you may need to adjust the `--maxlen` parameter when calling make_db.py. The default value is 500, but you can increase or decrease this value depending on your hardware. If a sequence's length exceeds the threshold, the script will split the sequence into smaller segments with overlapping segments (length 200) and embed each sub-sequence separately. The overlaps are averaged to produce the final embedding. This method of embedding sequences gave similar results to embedding the full sequence, but is significantly faster and allows for the embedding of any sequence regardless of it's length.
+
+If you have access to one or more GPUs, you can also use the `--gpu` option to specify the number of GPUs to embed sequences with, otherwise it will default to using the CPU. Generating fingerprints from these embeddings is much less memory intensive, but is performed only on the CPU. You can specify the number of CPU cores to use with the `--cpu` parameter to fingerprint multiple sequences at once (default is 1). For example, the command below will embed sequences on one GPU and fingerprint them on 12 CPU cores:
+
+```
+python src/make_db.py --fafile <.fa file> --dbfile <output> --gpu 1 --cpu 12
 ```
 
 ## Comparing DCT fingerprints
-Once the DCT fingerprints are generated, they can be used for similarity detection by running the dct-sim.py script. This script can be run in three different modes. We will use the examples under test/ for demonstration purposes.
+Once the DCT fingerprints are generated, they can be used for database searching by running the query.db script. As an example, we will use the files under test/ for demonstration purposes. First run the following commands to generate the fingerprint database:
+
+similarity detection by running the dct-sim.py script. This script can be run in three different modes. We will use the examples under test/ for demonstration purposes.
 
 ```
 cd test
+python ../src/make_db.py --fafile example.fasta --dbfile example
 ```
 
-### All against all pairwise comparison
-By default, dct-sim.py will perform an all-against-all comparison of the proteins in the .npz file. You can capture the output by using the --output option.
+### Database search
+To search a query fasta file/database file against a target database, run the following command:
 
 ```
-python ../src/dct-sim.py --dct example-dct.npz --output example-all-vs-all-dctsim.txt
+python ../src/query_db.py --query example.fasta --db example.db --out example-search.txt --khits 50
 ```
+
+This will generate a file containing the top 50 hits between each query sequence and the target database. Each hit lists the query sequence and its predicted domain region, the target sequence and predicted domain region, and the similarity score (1 minus the normalized L1 distance) between the two fingerprints. The scores range between 0 and 1, with 0 indicating no similarity and 1 highest similarity. Typically, DCTdomain score of 0.25 or DCTglobal score of 0.20 indicates the two proteins share some similarity. 
+
+
+Like in src/make_db.py, you can change the `--maxlen`, `--cpu`, and `--gpu` parameters to suit your system's hardware (if querying a fasta file).
 
 ### Pairwise comparision for a given list of protein pairs
-If you have a list of specific protein pairs that you want to compare, you can use the --pair option. The file of pairs should contain two columns, with the first column containing the ID of the first protein and the second column containing the ID of the second protein. Check example.pair for an example. The third 'label' column is not necessary to run the script.
-
+If you have a list of specific protein pairs that you want to compare, you can use the dct-sim.py script. The file of pairs should contain two columns, with the first column containing the ID of the first protein and the second column containing the ID of the second protein. Check example.pair for an example. The third 'label' column is not necessary to run the script.
+p
 ```
 python ../src/dct-sim.py --pair example.pair --dct example-dct.npz --output example-dctsim.txt 
 ```
 
+The output file contains rows listing the similarity between a pair of proteins, with the first two columns showing the IDs of the proteins, followed by two similarty scores of the DCT fingerprints DCTdomain and DCTglobal.
+
 Also see examples under bench/homo benchmark. 
-
-### All against database
-In this example we use the same npz as the query and as the database. All proteins given in --dct will be compared against all proteins given in --db. 
-
-```
-python ../src/dct-sim.py --dct example-dct.npz --db example-dct.npz --output example-all-vs-db-dctsim.txt
-```
-
-### Results and DCT fingerprint similarty scores
-
-In the main output file, each row shows the similarity between a pair of proteins, with the first two columns showing the IDs of the proteins, followed by two similarty scores of the DCT fingerprints DCTdomain and DCTglobal. The scores range between 0 and 1, with 0 indicating no similarity and 1 highest similarity. Typically, DCTdomain score of 0.25 or DCTglobal score of 0.20 indicates the two proteins share some similarity. 
 
 ## Benchmarks
 See benchmarks and corresponding readmes under bench/ folder.
@@ -77,6 +86,10 @@ domcut -- domain segmentation on FUpred benchmark
 G7PD -- pairs of G6PD containing proteins
 
 homo -- homology detection benchmarks
+
+cathdb -- database searching on CATH20
+
+mmseqs -- database searching on mmseqs2 benchmark
 
 ## Installation
 With git and conda, you can close this repository and install the required dependencies with the following commands:
