@@ -54,9 +54,8 @@ def get_top_hits(dm: np.ndarray, im: np.ndarray, top: int, fp_db: Database, quer
         select = """ SELECT pid, domain FROM fingerprints WHERE vid = ? """
         db_pid, db_domain = fp_db.cur.execute(select, (db_vid+1,)).fetchone()
         q_pid, q_domain = query_db.cur.execute(select, (q_vid,)).fetchone()  # not taken from faiss
-        logging.info('Query: %s %s, Result %s: %s %s, Distance: %s',
-                      q_pid, q_domain, i+1, db_pid, db_domain, top_hits[index]/17000)
-    logging.info('')
+        logging.info('Query: %s %s, Result %s: %s %s, Similarity: %s',
+                      q_pid, q_domain, i+1, db_pid, db_domain, 1-(top_hits[index]/17000))
 
 
 def search_db(args: argparse.Namespace, query_db: str, fp_db: str, metric: str = 'l1'):
