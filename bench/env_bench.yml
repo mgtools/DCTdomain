@@ -7,21 +7,34 @@ dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_gnu
   - aria2=1.37.0=h347180d_1
+  - blast=2.16.0=h6f7f691_0
+  - blast-legacy=2.2.26=h9ee0642_3
   - bzip2=1.0.8=hd590300_5
   - c-ares=1.28.1=hd590300_0
   - ca-certificates=2024.7.4=hbcca054_0
+  - csblast=2.2.3=h4ac6f70_3
   - cudatoolkit=11.8.0=h4ba93d1_13
+  - curl=8.8.0=he654da7_1
+  - entrez-direct=22.1=he881be0_0
   - faiss=1.7.4=py311cuda112h9171b99_0_cuda
+  - fasta3=36.3.8=hec16e2b_7
   - gawk=5.3.0=ha916aea_0
   - gettext=0.22.5=h59595ed_2
   - gettext-tools=0.22.5=h59595ed_2
   - gmp=6.3.0=hac33072_2
+  - hhsuite=3.3.0=py311pl5321h9f068be_12
+  - hmmer=3.4=hdbdd923_1
   - icu=73.2=h59595ed_0
+  - keyutils=1.6.1=h166bdaf_0
+  - krb5=1.21.3=h659f571_0
   - ld_impl_linux-64=2.40=hf3520f5_7
   - libasprintf=0.22.5=h661eb56_2
   - libasprintf-devel=0.22.5=h661eb56_2
   - libblas=3.9.0=22_linux64_openblas
   - libcblas=3.9.0=22_linux64_openblas
+  - libcurl=8.8.0=hca28451_1
+  - libedit=3.1.20191231=he28a2e2_2
+  - libev=4.33=hd590300_2
   - libfaiss=1.7.4=cuda112hb18a002_0_cuda
   - libfaiss-avx2=1.7.4=cuda112h1234567_0_cuda
   - libffi=3.4.2=h7f98852_5
@@ -34,6 +47,7 @@ dependencies:
   - libiconv=1.17=hd590300_2
   - libidn2=2.3.7=hd590300_0
   - liblapack=3.9.0=22_linux64_openblas
+  - libnghttp2=1.58.0=h47da74e_1
   - libnsl=2.0.1=hd590300_0
   - libopenblas=0.3.27=pthreads_h413a1c8_0
   - libsqlite=3.46.0=hde9e2c9_0
@@ -46,10 +60,32 @@ dependencies:
   - libzlib=1.2.13=h4ab18f5_6
   - mmseqs2=15.6f452=pl5321h6a68c12_2
   - mpfr=4.2.1=h9458935_1
+  - ncbi-vdb=3.1.1=h4ac6f70_1
   - ncurses=6.5=h59595ed_0
   - numpy=1.26.4=py311h64a7726_0
-  - openssl=3.3.1=h4ab18f5_1
+  - openssl=3.3.1=h4bc722e_2
+  - pcre=8.45=h9c3ff4c_0
   - perl=5.32.1=7_hd590300_perl5
+  - perl-archive-tar=2.40=pl5321hdfd78af_0
+  - perl-carp=1.50=pl5321hd8ed1ab_0
+  - perl-common-sense=3.75=pl5321hd8ed1ab_0
+  - perl-compress-raw-bzip2=2.201=pl5321h166bdaf_0
+  - perl-compress-raw-zlib=2.202=pl5321h166bdaf_0
+  - perl-encode=3.21=pl5321hd590300_0
+  - perl-exporter=5.74=pl5321hd8ed1ab_0
+  - perl-exporter-tiny=1.002002=pl5321hd8ed1ab_0
+  - perl-extutils-makemaker=7.70=pl5321hd8ed1ab_0
+  - perl-io-compress=2.201=pl5321hdbdd923_2
+  - perl-io-zlib=1.14=pl5321hdfd78af_0
+  - perl-json=4.10=pl5321hdfd78af_0
+  - perl-json-xs=2.34=pl5321h4ac6f70_6
+  - perl-list-moreutils=0.430=pl5321hdfd78af_0
+  - perl-list-moreutils-xs=0.430=pl5321h031d066_2
+  - perl-parent=0.241=pl5321hd8ed1ab_0
+  - perl-pathtools=3.75=pl5321h166bdaf_0
+  - perl-scalar-list-utils=1.63=pl5321h166bdaf_0
+  - perl-storable=3.15=pl5321h166bdaf_0
+  - perl-types-serialiser=1.01=pl5321hdfd78af_0
   - pip=24.0=pyhd8ed1ab_0
   - python=3.11.0=he550d4f_1_cpython
   - python_abi=3.11=4_cp311
@@ -60,9 +96,12 @@ dependencies:
   - wheel=0.43.0=pyhd8ed1ab_1
   - xz=5.2.6=h166bdaf_0
   - zlib=1.2.13=h4ab18f5_6
+  - zstd=1.5.6=ha6fb4c9_0
   - pip:
+      - blosc==1.11.2
       - certifi==2024.7.4
       - charset-normalizer==3.3.2
+      - click==8.1.7
       - contourpy==1.2.1
       - cycler==0.12.1
       - fair-esm==2.0.0
@@ -91,8 +130,10 @@ dependencies:
       - nvidia-nvtx-cu12==12.1.105
       - packaging==24.1
       - pandas==2.2.2
+      - patsy==0.5.6
       - pillow==10.4.0
       - pyparsing==3.1.2
+      - pyprost==0.2.15
       - python-dateutil==2.9.0.post0
       - pytz==2024.1
       - pyyaml==6.0.1
@@ -102,6 +143,7 @@ dependencies:
       - scipy==1.14.0
       - sentencepiece==0.2.0
       - six==1.16.0
+      - statsmodels==0.14.2
       - sympy==1.12.1
       - tokenizers==0.19.1
       - torch==2.3.1
