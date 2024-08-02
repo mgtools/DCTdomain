@@ -3,6 +3,17 @@ Protein domain-level embedding via ESM-2 and DCT for homology detection and simi
 
 Paper: https://www.biorxiv.org/content/10.1101/2023.11.27.567555v2
 
+## Installation
+With git and conda, you can close this repository and install the required dependencies with the following commands:
+
+```
+git clone https://github.com/mgtools/DCTdomain
+cd DCTdomain
+conda env create --file env.yml
+conda activate DCTdomain
+g++ -o src/RecCut src/RecCut.cpp
+```
+
 ## Approach
 An overview of the pipeline is visualized in the figure below:
 
@@ -88,18 +99,6 @@ G7PD -- pairs of G6PD containing proteins
 homo -- homology detection benchmarks
 
 cathdb -- database searching on CATH20
-
-mmseqs -- database searching on mmseqs2 benchmark
-
-## Installation
-With git and conda, you can close this repository and install the required dependencies with the following commands:
-
-```
-git clone https://github.com/mgtools/DCTdomain
-cd DCTdomain
-conda env create --file env.yml
-g++ -o src/RecCut src/RecCut.cpp
-```
 
 ## Final words about RecCut:
 
