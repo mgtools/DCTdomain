@@ -1,9 +1,13 @@
 This folder includes a small number of proteins/protein pairs for testing purposes as shown in the README in the main folder.
 
-Running the bash script below will run the pipeline on the proteins in this folder.
+Running the following command inside the test/ directory will create a database of fingerprints:
 
 ```
-bash commands.sh
+python ../src/make_db.py --fafile example.fasta --dbfile example
 ```
 
-This will output example-dct.npz, which contains all of the DCT fingerprints of the proteins in example.fasta, as well two directories (NPY and CE) which contain the ESM-2 embeddings and contact maps for each protein. It will also output example-dctsim.txt which contains the similarity between each pair of proteins in example.pair. Given the homologous/nonhomologous labels in example.pair, we would expect homologous proteins to have high similarity scores and nonhomologous proteins to have low similarity scores, which indeed is observed in example-dctsim.txt.
+And this command to search the database against itself:
+
+```
+python ../src/query_db.py --query example.fasta --db example.db --out example-search.txt --khits 50
+```
