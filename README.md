@@ -13,6 +13,7 @@ conda env create --file env.yml
 conda activate DCTdomain
 g++ -o src/RecCut src/RecCut.cpp
 ```
+$${\color{red}Make sure that you compile RecCut as above before you start to use DCTdomain.}$$
 
 ## Approach
 An overview of the pipeline is visualized in the figure below:
@@ -80,7 +81,7 @@ Like in src/make_db.py, you can change the `--maxlen`, `--cpu`, and `--gpu` para
 
 ### Pairwise comparision for a given list of protein pairs
 If you have a list of specific protein pairs that you want to compare, you can use the dct-sim.py script. The file of pairs should contain two columns, with the first column containing the ID of the first protein and the second column containing the ID of the second protein. Check example.pair for an example. The third 'label' column is not necessary to run the script.
-p
+
 ```
 python ../src/dct-sim.py --pair example.pair --dct example-dct.npz --output example-dctsim.txt 
 ```
