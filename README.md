@@ -13,7 +13,7 @@ conda env create --file env.yml
 conda activate DCTdomain
 g++ -o src/RecCut src/RecCut.cpp
 ```
-$${\color{red}Make sure that you compile RecCut as above before you start to use DCTdomain.}$$
+**Make sure that you compile RecCut as above before you start to use DCTdomain.**
 
 ## Approach
 An overview of the pipeline is visualized in the figure below:
