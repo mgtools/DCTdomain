@@ -37,9 +37,13 @@ for b in range(len(benchlist)):  #pylint: disable=consider-using-enumerate
 
     plt.plot([0,1], [0,1], "k--", label="Random (AUC = 0.500)")
     plt.axis("square")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title(f"{bench_show}")
-    plt.legend()
+    plt.xlabel("False Positive Rate", fontsize=12)
+    plt.ylabel("True Positive Rate", fontsize=12)
+    plt.tick_params(axis='both', which='major', labelsize=11)
+    plt.title(f"{bench_show}", fontsize=12)
+    if "local" in bench:
+        plt.legend(fontsize=10)
+    else:
+        plt.legend(fontsize=11)
     plt.savefig(f"bench/homo/results/{bench_show}-roc.pdf")
     plt.close()

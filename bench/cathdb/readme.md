@@ -4,7 +4,12 @@ This benchmark tests DCTdomain using CATH20 v4.2.0 in the same way as knnProtT5 
 You can prepare the cath20 dataset by running the follow command from the root directory:
 
 ```
-python -m bench.cath.get_cath20
+python -m bench.cathdb.get_cath20
+```
+
+If you have GPU, please consider using gpu
+```
+python -m bench.cathdb.get_cath20 --gpu 1
 ```
 
 This command will download the dataset and fingerprint each sequence, as well as prepare the query sequences.

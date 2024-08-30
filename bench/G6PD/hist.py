@@ -44,9 +44,11 @@ for idx in range(2):
     y = ((1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
     plt.plot(bins, y, '--', color="gray")
 
-    plt.xlabel(f'DCT-{sim} similarity score')
-    plt.ylabel('Density')
-    plt.legend(title='Protein pairs')
+    plt.xlabel(f'DCT-{sim} similarity score', fontsize=12)
+    plt.ylabel('Density', fontsize=12)
+    #plt.legend(title='Protein pairs', fontsize=12)
+    plt.legend(fontsize=12)
+    plt.tick_params(axis='both', which='major', labelsize=11)
     plt.savefig(f"G6PD-{tag}-hist.pdf")
     plt.close()
 

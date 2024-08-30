@@ -1,7 +1,7 @@
 # DCTdomain
 Protein domain-level embedding via ESM-2 and DCT for homology detection and similarity search.
 
-Paper: https://www.biorxiv.org/content/10.1101/2023.11.27.567555v2
+Citation: Benjamin G. Iovino, Haixu Tang and Yuzhen Ye. 2024. Protein domain embeddings for fast and accurate similarity search. Genome Research (doi: 10.1101/gr.279127.124).
 
 ## Installation
 With git and conda, you can close this repository and install the required dependencies with the following commands:
@@ -10,7 +10,7 @@ With git and conda, you can close this repository and install the required depen
 git clone https://github.com/mgtools/DCTdomain
 cd DCTdomain
 conda env create --file env.yml
-conda activate DCTdomain
+conda activate dctdomain
 g++ -o src/RecCut src/RecCut.cpp
 ```
 **Make sure that you compile RecCut as above before you start to use DCTdomain.**
