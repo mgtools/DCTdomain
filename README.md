@@ -4,7 +4,7 @@ Protein domain-level embedding via ESM-2 and DCT for homology detection and simi
 Citation: Benjamin G. Iovino, Haixu Tang and Yuzhen Ye. 2024. Protein domain embeddings for fast and accurate similarity search. Genome Research (doi: 10.1101/gr.279127.124).
 
 ## Installation
-With git and conda, you can close this repository and install the required dependencies with the following commands:
+With git and conda, you can clone this repository and install the required dependencies with the following commands:
 
 ```
 git clone https://github.com/mgtools/DCTdomain
